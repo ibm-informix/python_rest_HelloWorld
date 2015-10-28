@@ -22,24 +22,24 @@ import requests
 from flask import Flask, render_template
 
 app = Flask(__name__)
-baseUrl = "http://username:password@yoururl:port"
-database = "dbTest"
+baseUrl = "http://username:password@yoururl:port/dbTest"
 port = int(os.getenv('VCAP_APP_PORT', 8080))
-baseDbUrl= baseUrl + "/" + database
 collectionName = "pythonREST"
 commands = []
 
 # parsing vcap services
-# def parseVCAP():
-#     global database
-#     global url
-#     altadb = json.loads(os.environ['VCAP_SERVICES'])['altadb-dev'][0]
-#     credentials = altadb['credentials']
-#     ssl = False
-#     if ssl == True:
-#         url = credentials['ssl_rest_url']
-#     else:
-#         url = credentials['rest_url']
+def parseVCAP():
+    global database
+    global baseUrl
+    
+    tsdb = json.loads(os.environ['VCAP_SERVICES'])['timeseriesdatabase'][0]
+    credentials = tsdb['credentials']
+    database = credentials['db']
+    ssl = False
+    if ssl == True:
+        baseUrl = credentials['rest_url_ssl']
+    else:
+        baseUrl = credentials['rest_url']
          
 def printError(message, reply):
     commands.append("Error: " + message)
@@ -50,7 +50,7 @@ def doEverything():
     commands.append("# 1 Inserts")
     commands.append( "# 1.1 Insert a single document to a collection")
     data = json.dumps({'name': 'test1', 'value': 1})
-    reply = requests.post(baseDbUrl + "/" + collectionName, data)
+    reply = requests.post(baseUrl + "/" + collectionName, data)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("inserted " + str(doc.get('n')) + " documents")
@@ -59,7 +59,7 @@ def doEverything():
     
     commands.append("# 1.2 Insert multiple documents to a collection")
     data = json.dumps([{'name': 'test1', 'value': 1}, {'name': 'test2', 'value': 2}, {'name': 'test3', 'value': 3} ] )
-    reply = requests.post(baseDbUrl + "/" + collectionName, data)
+    reply = requests.post(baseUrl + "/" + collectionName, data)
     if reply.status_code == 202:
         doc = reply.json()
         commands.append("inserted " + str(doc.get('n')) + " documents")
@@ -69,7 +69,7 @@ def doEverything():
     commands.append("# 2 Queries")
     commands.append("# 2.1 Find a document in a collection that matches a query condition")
     query = json.dumps({'name':'test1'})
-    reply = requests.get(baseDbUrl + "/" + collectionName + "?query=" + query)
+    reply = requests.get(baseUrl + "/" + collectionName + "?query=" + query)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("query result: " + str(doc[0]))
@@ -78,7 +78,7 @@ def doEverything():
           
     commands.append("# 2.2 Find all documents in a collection that match a query condition")
     query = json.dumps({'name':'test1'})
-    reply = requests.get(baseDbUrl + "/" + collectionName + "?query=" + query)
+    reply = requests.get(baseUrl + "/" + collectionName + "?query=" + query)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("query result: " + str(doc))
@@ -86,7 +86,7 @@ def doEverything():
         printError("Unable to query documents in collection", reply)
                              
 #     commands.append("# 2.3 Find all documents in a collection")
-    reply = requests.get(baseDbUrl+ "/" + collectionName)
+    reply = requests.get(baseUrl+ "/" + collectionName)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("query result: " + str(doc))
@@ -96,7 +96,7 @@ def doEverything():
     commands.append("# 3 Update documents in a collection")
     query = json.dumps({'name': 'test3'})
     data = json.dumps({'$set' : {'value' : 9} })
-    reply = requests.put(baseDbUrl + "/" + collectionName + "?query=" + query, data)
+    reply = requests.put(baseUrl + "/" + collectionName + "?query=" + query, data)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("updated " + str(doc.get('n')) + " documents")
@@ -105,7 +105,7 @@ def doEverything():
                              
     commands.append("# 4 Delete documents in a collection")
     query = json.dumps({'name': 'test2'})
-    reply = requests.delete(baseDbUrl + "/" + collectionName + "?query=" + query)
+    reply = requests.delete(baseUrl + "/" + collectionName + "?query=" + query)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("deleted " + str(doc.get('n')) + " documents")
@@ -113,7 +113,7 @@ def doEverything():
         printError("Unable to delete documents in collection", reply)
                              
     commands.append("# 5 Get a listing of collections")
-    reply = requests.get(baseDbUrl)
+    reply = requests.get(baseUrl)
     if reply.status_code == 200:
         doc = reply.json()
         dbList = ""
@@ -124,7 +124,7 @@ def doEverything():
         printError("Unable to retrieve collection listing", reply)
           
     commands.append("# 6 Drop a collection")
-    reply = requests.delete(baseDbUrl + "/" + collectionName)
+    reply = requests.delete(baseUrl + "/" + collectionName)
     if reply.status_code == 200:
         doc = reply.json()
         commands.append("delete collection result: " + str(doc))
@@ -139,7 +139,7 @@ def displayPage():
 def printCommands():
     global commands
     commands = []
-#     parseVCAP()
+    parseVCAP()
     doEverything()
     return render_template('tests.html', commands=commands)
  
