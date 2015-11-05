@@ -15,7 +15,7 @@
 # 5 Get a listing of collections
 # 6 Drop a collection
 
-
+import logging
 import json
 import os
 import requests
@@ -139,8 +139,13 @@ def displayPage():
 def printCommands():
     global commands
     commands = []
-    parseVCAP()
-    doEverything()
+    try:
+        parseVCAP()
+        doEverything()
+    except Exception as e:
+        logging.exception(e) 
+        commands.append("EXCEPTION: " + str(e))
+        commands.append("See log for details")
     return render_template('tests.html', commands=commands)
  
 if (__name__ == "__main__"):
