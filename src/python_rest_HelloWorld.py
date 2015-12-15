@@ -73,6 +73,9 @@ def doEverything():
     output.append( "# 1.1 Insert a single document to a collection")
     data = json.dumps({'name': 'test1', 'value': 1})
     reply = requests.post(url + "/" + COLLECTION_NAME, data)
+    # Note: the cookie holds our session id. In order to reuse the same listener session 
+    # on subsequent REST requests, we must set this cookie as part of subsequent requests. 
+    cookies = reply.cookies  
     if reply.status_code == 200:
         doc = reply.json()
         output.append("inserted " + str(doc.get('n')) + " documents")
@@ -81,7 +84,7 @@ def doEverything():
     
     output.append("# 1.2 Insert multiple documents to a collection")
     data = json.dumps([{'name': 'test1', 'value': 1}, {'name': 'test2', 'value': 2}, {'name': 'test3', 'value': 3} ] )
-    reply = requests.post(url + "/" + COLLECTION_NAME, data)
+    reply = requests.post(url + "/" + COLLECTION_NAME, data, cookies=cookies)
     if reply.status_code == 202:
         doc = reply.json()
         output.append("inserted " + str(doc.get('n')) + " documents")
@@ -91,7 +94,7 @@ def doEverything():
     output.append("# 2 Queries")
     output.append("# 2.1 Find a document in a collection that matches a query condition")
     query = json.dumps({'name':'test1'})
-    reply = requests.get(url + "/" + COLLECTION_NAME + "?query=" + query)
+    reply = requests.get(url + "/" + COLLECTION_NAME + "?query=" + query, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         output.append("query result: " + str(doc[0]))
@@ -100,7 +103,7 @@ def doEverything():
           
     output.append("# 2.2 Find all documents in a collection that match a query condition")
     query = json.dumps({'name':'test1'})
-    reply = requests.get(url + "/" + COLLECTION_NAME + "?query=" + query)
+    reply = requests.get(url + "/" + COLLECTION_NAME + "?query=" + query, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         output.append("query result: " + str(doc))
@@ -108,7 +111,7 @@ def doEverything():
         printError(output, "Unable to query documents in collection", reply)
                              
 #     output.append("# 2.3 Find all documents in a collection")
-    reply = requests.get(url+ "/" + COLLECTION_NAME)
+    reply = requests.get(url+ "/" + COLLECTION_NAME, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         output.append("query result: " + str(doc))
@@ -118,7 +121,7 @@ def doEverything():
     output.append("# 3 Update documents in a collection")
     query = json.dumps({'name': 'test3'})
     data = json.dumps({'$set' : {'value' : 9} })
-    reply = requests.put(url + "/" + COLLECTION_NAME + "?query=" + query, data)
+    reply = requests.put(url + "/" + COLLECTION_NAME + "?query=" + query, data, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         output.append("updated " + str(doc.get('n')) + " documents")
@@ -127,7 +130,7 @@ def doEverything():
                              
     output.append("# 4 Delete documents in a collection")
     query = json.dumps({'name': 'test2'})
-    reply = requests.delete(url + "/" + COLLECTION_NAME + "?query=" + query)
+    reply = requests.delete(url + "/" + COLLECTION_NAME + "?query=" + query, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         output.append("deleted " + str(doc.get('n')) + " documents")
@@ -135,7 +138,7 @@ def doEverything():
         printError(output, "Unable to delete documents in collection", reply)
                              
     output.append("# 5 Get a listing of collections")
-    reply = requests.get(url)
+    reply = requests.get(url, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         dbList = ""
@@ -146,7 +149,7 @@ def doEverything():
         printError(output, "Unable to retrieve collection listing", reply)
           
     output.append("# 6 Drop a collection")
-    reply = requests.delete(url + "/" + COLLECTION_NAME)
+    reply = requests.delete(url + "/" + COLLECTION_NAME, cookies=cookies)
     if reply.status_code == 200:
         doc = reply.json()
         output.append("delete collection result: " + str(doc))
